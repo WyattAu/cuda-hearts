@@ -34,6 +34,7 @@ bevy = { version = "0.20", optional = true, default-features = false, features =
   "bevy_color",
   "bevy_image",
   "png",
+  "jpeg",
   "bevy_text",
   "bevy_window",
   "bevy_render",

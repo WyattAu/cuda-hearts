@@ -98,14 +98,18 @@ Rules:
 
 | Asset | Path | Used for |
 | ----- | ---- | -------- |
-| Scene background | `assets/backgrounds/<scene-id>.png` | full-screen backdrop when a `~ scene <id>` directive plays |
+| Scene background | `assets/backgrounds/<scene-id>.jpg/.png` | full-screen backdrop when a `~ scene <id>` directive plays |
 | Character portrait | `assets/sprites/<cast>_<mood>.png` (fallback `<cast>.png`) | right-side portrait panel for `~ show` |
 | Title key art | `assets/title.png` | behind the title screen |
 
 Anything missing falls back to tinted placeholders, so scripts never block
-on art. The current PNGs are programmatically generated silhouettes kept
-deliberately abstract: this is a parody of a real person, so ship original
-artwork — never photographs.
+on art. Background photographs come from Wikimedia Commons under CC BY
+licenses — **author, license, and source for every file are recorded in
+[`ASSETS.md`](ASSETS.md)**, which is what keeps the copyright situation
+clean. Character sprites are original stylized silhouettes of a fictional
+character; by project policy no photograph of a real person is used in
+`assets/` (source labels don't create usage rights, and likeness use in
+romantic fiction isn't something a photo license grants).
 
 ## Architecture
 
