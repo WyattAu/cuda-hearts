@@ -22,8 +22,11 @@ is real and working:
 - [x] Multiple endings, scene/stage direction directives
 - [x] Typewriter dialogue box, choice buttons, title screen (bevy 0.20)
 - [x] Save/load (F5 / F9) as JSON snapshots
+- [x] Scene backgrounds + mood-keyed character portraits (placeholder
+      silhouettes; swap files in `assets/backgrounds/` and `assets/sprites/`
+      to upgrade — no code changes)
 - [ ] More chapters (`assets/scripts/*.vn` — just add files)
-- [ ] Real sprite/background art (stage chips are colored placeholders)
+- [ ] Real illustration/photography pass over the placeholder art
 - [ ] BGM + SFX
 - [ ] Endings gallery, flag-gated dialogue, affinity-ranked endings
 
@@ -87,6 +90,22 @@ Rules:
 
 1. Add an entry to `CAST` in `src/vn/cast.rs` (id, display name, hex color).
 2. Use them in any script: `~ show <id> <mood>` and `<id>: <line>`.
+3. *(Optional)* drop a portrait at `assets/sprites/<id>_<mood>.png` — or a
+   plain `assets/sprites/<id>.png` for all moods. Without art they get the
+   placeholder name chip.
+
+### Art conventions
+
+| Asset | Path | Used for |
+| ----- | ---- | -------- |
+| Scene background | `assets/backgrounds/<scene-id>.png` | full-screen backdrop when a `~ scene <id>` directive plays |
+| Character portrait | `assets/sprites/<cast>_<mood>.png` (fallback `<cast>.png`) | right-side portrait panel for `~ show` |
+| Title key art | `assets/title.png` | behind the title screen |
+
+Anything missing falls back to tinted placeholders, so scripts never block
+on art. The current PNGs are programmatically generated silhouettes kept
+deliberately abstract: this is a parody of a real person, so ship original
+artwork — never photographs.
 
 ## Architecture
 
