@@ -18,15 +18,17 @@ gui = ["dep:bevy"]
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-# Feature set = bevy's 2D+UI stack minus audio/3d/gamepad: those pull
-# alsa/udev system libraries and break headless `--all-features` CI.
+# Feature set = bevy's 2D+UI stack minus audio/3d/gamepad/wayland: those
+# pull system libraries (alsa, udev, libwayland-dev) and break headless
+# `--all-features` CI. Wayland desktops run via XWayland (x11-dl dlopens
+# at runtime); add bevy's `wayland` feature locally if you want native
+# Wayland and have libwayland-dev installed.
 bevy = { version = "0.20", optional = true, default-features = false, features = [
   "default_app",
   "std",
   "multi_threaded",
   "bevy_winit",
   "x11",
-  "wayland",
   "default_font",
   "bevy_camera",
   "bevy_color",

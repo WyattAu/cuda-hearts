@@ -33,9 +33,9 @@ is real and working:
 cargo run --features gui
 ```
 
-Linux build deps (GUI only — CI builds the engine without them):
-`alsa-lib` is **not** needed (audio is disabled); a Vulkan/X11/Wayland
-runtime is, plus the usual bevy runtime libs. On Arch:
+Linux build deps (GUI only — CI builds the engine without them): audio is
+disabled (no alsa) and Wayland goes through XWayland (no libwayland-dev
+needed), so a Vulkan-capable runtime is all that's required. On Arch:
 
 ```sh
 pacman -S --needed vulkan-radeon libx11 libxkbcommon-x11 # as appropriate for your GPU
@@ -106,8 +106,8 @@ assets/scripts/       # the story itself
 
 The `vn` crate is dependency-light (`serde` only) so CI runs the full gate
 without graphics system libraries; the `gui` feature is the only thing
-pulling bevy, and bevy's feature set excludes audio/3d/gamepad for the same
-reason. `Playhead` is the whole state machine — if you ever want a different
+pulling bevy, and bevy's feature set excludes audio/3d/gamepad/wayland for
+the same reason (XWayland covers Wayland desktops). `Playhead` is the whole state machine — if you ever want a different
 renderer (web, TUI), it ports unchanged.
 
 ### Design notes
