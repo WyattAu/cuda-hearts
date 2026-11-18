@@ -26,6 +26,9 @@ use crate::vn::state::{Flow, Playhead, StageActor, VnError};
 /// Scripts live beside the crate during development (`cargo run`).
 pub const SCRIPT_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/scripts");
 
+/// Asset root for art lookups (`backgrounds/`, `sprites/`, `title`).
+const ASSETS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets");
+
 /// Where F5 saves go (gitignored).
 pub const SAVE_PATH: &str = "saves/cuda-hearts.json";
 
@@ -43,14 +46,26 @@ impl Plugin for GamePlugin {
             .init_resource::<Run>()
             .init_resource::<Present>()
             .init_resource::<Typewriter>()
-            .add_plugins(DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    title:
-                        "CUDA HEARTS — a leather-jacket love simulator (unofficial parody)".into(),
-                    ..default()
-                }),
-                ..default()
-            }))
+            .add_plugins(
+                DefaultPlugins
+                    .set(WindowPlugin {
+                        primary_window: Some(Window {
+                            title:
+                                "CUDA HEARTS — a leather-jacket love simulator (unofficial parody)"
+                                    .into(),
+                            ..default()
+                        }),
+                        ..default()
+                    })
+                    // Bevy resolves asset roots against the executable
+                    // directory by default; point it at the crate's assets
+                    // so `cargo run` works from anywhere. Swap to a relative
+                    // "assets" when packaging for release.
+                    .set(AssetPlugin {
+                        file_path: concat!(env!("CARGO_MANIFEST_DIR"), "/assets").into(),
+                        ..default()
+                    }),
+            )
             .add_systems(
                 Startup,
                 (spawn_camera, load_scripts, ui::spawn_title, ui::spawn_hud).chain(),
@@ -61,6 +76,7 @@ impl Plugin for GamePlugin {
                     handle_input,
                     run_typewriter,
                     sync_visibility,
+                    sync_background,
                     sync_texts,
                     sync_stage_chips,
                     sync_choices,
@@ -174,6 +190,16 @@ pub fn entry_script(scripts: &Scripts) -> Option<String> {
         return Some(ENTRY_SCRIPT.to_string());
     }
     scripts.0.keys().next().cloned()
+}
+
+/// Find an art asset by stem, trying supported extensions. Returns the
+/// path relative to `assets/` (what `AssetServer::load` expects), or
+/// `None` when no art exists — callers then fall back to placeholders.
+fn asset_art(rel_stem: &str) -> Option<String> {
+    ["png", "jpg", "webp"]
+        .into_iter()
+        .map(|ext| format!("{rel_stem}.{ext}"))
+        .find(|rel| std::path::Path::new(&format!("{ASSETS_DIR}/{rel}")).exists())
 }
 
 // ---------------------------------------------------------------------------
@@ -384,10 +410,12 @@ fn sync_visibility(
     }
 }
 
-/// Rebuild the placeholder stage chips whenever the stage changes.
+/// Rebuild the stage whenever it changes: sprite portraits when art
+/// exists, colored name chips otherwise.
 fn sync_stage_chips(
     mut commands: Commands,
     present: Res<Present>,
+    art: Res<AssetServer>,
     stage_row: Query<Entity, With<ui::StageRow>>,
     mut shown_chips: Local<Vec<Entity>>,
     mut shown_chip_stage: Local<Vec<(String, String)>>,
@@ -407,6 +435,38 @@ fn sync_stage_chips(
                 let (r, g, b) = cast::character(&actor.cast)
                     .map(cast::Character::rgb)
                     .unwrap_or((0xB0, 0xB0, 0xB0));
+
+                // Sprite art wins over the placeholder chip: mood-specific
+                // (`<cast>_<mood>`) first, then any art for the cast member.
+                let sprite = asset_art(&format!("sprites/{}_{}", actor.cast, actor.mood))
+                    .or_else(|| asset_art(&format!("sprites/{}", actor.cast)))
+                    .map(|rel| art.load::<Image>(rel));
+                if let Some(handle) = sprite {
+                    let portrait = commands
+                        .spawn((
+                            ui::StagePortrait {
+                                cast: actor.cast.clone(),
+                            },
+                            Node {
+                                position_type: PositionType::Absolute,
+                                right: Val::Px(48.0),
+                                bottom: Val::Px(150.0),
+                                width: percent(26),
+                                height: percent(62),
+                                border_radius: BorderRadius::all(Val::Px(14.0)),
+                                ..default()
+                            },
+                            ImageNode {
+                                image: handle,
+                                ..default()
+                            },
+                            Visibility::Visible,
+                        ))
+                        .id();
+                    shown_chips.push(portrait);
+                    continue;
+                }
+
                 let chip = commands
                     .spawn((
                         ui::StageChip,
@@ -520,6 +580,59 @@ fn sync_choices(
                 commands.entity(root).add_child(button);
             }
             *choice_root = Some(root);
+        }
+    }
+}
+
+/// Swap the scene backdrop whenever the scene id changes: full-screen
+/// background art when `assets/backgrounds/<scene>.*` exists, otherwise
+/// the tinted placeholder.
+fn sync_background(
+    mut commands: Commands,
+    present: Res<Present>,
+    art: Res<AssetServer>,
+    mut backdrop: Query<(&mut Visibility, &mut BackgroundColor), With<ui::SceneBackdrop>>,
+    mut shown_scene: Local<Option<String>>,
+    mut image_entity: Local<Option<Entity>>,
+) {
+    let Some(scene) = present.scene.clone() else {
+        return;
+    };
+    if shown_scene.as_ref() == Some(&scene) {
+        return;
+    }
+    *shown_scene = Some(scene.clone());
+    if let Some(old) = image_entity.take() {
+        commands.entity(old).despawn();
+    }
+    match asset_art(&format!("backgrounds/{scene}")).map(|rel| art.load::<Image>(rel)) {
+        Some(handle) => {
+            if let Ok((mut visibility, _)) = backdrop.single_mut() {
+                *visibility = Visibility::Hidden;
+            }
+            let entity = commands
+                .spawn((
+                    ui::SceneBackdropImage,
+                    Node {
+                        position_type: PositionType::Absolute,
+                        width: percent(100),
+                        height: percent(100),
+                        ..default()
+                    },
+                    ImageNode {
+                        image: handle,
+                        ..default()
+                    },
+                    Visibility::Visible,
+                ))
+                .id();
+            *image_entity = Some(entity);
+        }
+        None => {
+            if let Ok((mut visibility, mut color)) = backdrop.single_mut() {
+                *visibility = Visibility::Visible;
+                color.0 = scene_color(&scene);
+            }
         }
     }
 }

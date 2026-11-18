@@ -20,9 +20,23 @@ pub struct TitleRoot;
 #[derive(Component)]
 pub struct DialogueRoot;
 
-/// Full-screen scene background tint.
+/// Full-screen scene background tint (fallback when no background art).
 #[derive(Component)]
 pub struct SceneBackdrop;
+
+/// Full-screen scene background image (spawned when art exists).
+#[derive(Component)]
+pub struct SceneBackdropImage;
+
+/// Full-screen title key art, if present.
+#[derive(Component)]
+pub struct TitleArt;
+
+/// A stage actor shown as sprite art instead of a placeholder chip.
+#[derive(Component)]
+pub struct StagePortrait {
+    pub cast: String,
+}
 
 /// Name plate text above the dialogue body.
 #[derive(Component)]
@@ -85,7 +99,24 @@ fn margin_px(x: f32, y: f32) -> UiRect {
 // Title screen
 // ---------------------------------------------------------------------------
 
-pub fn spawn_title(mut commands: Commands) {
+pub fn spawn_title(mut commands: Commands, art: Res<AssetServer>) {
+    // Title key art behind the text, when present.
+    if let Some(rel) = super::asset_art("title") {
+        commands.spawn((
+            TitleArt,
+            Node {
+                position_type: PositionType::Absolute,
+                width: percent(100),
+                height: percent(100),
+                ..default()
+            },
+            ImageNode {
+                image: art.load::<Image>(rel),
+                ..default()
+            },
+            Visibility::Visible,
+        ));
+    }
     commands
         .spawn((
             TitleRoot,
@@ -98,7 +129,7 @@ pub fn spawn_title(mut commands: Commands) {
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
-            BackgroundColor(Color::srgb(0.02, 0.05, 0.02)),
+            BackgroundColor(Color::srgba(0.02, 0.05, 0.02, 0.55)),
             Visibility::Visible,
         ))
         .with_children(|parent| {
