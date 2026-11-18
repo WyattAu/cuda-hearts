@@ -1,0 +1,61 @@
+[package]
+name = "cuda-hearts"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+description = "Unofficial parody visual novel — a leather-jacket love simulator"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/WyattAu/cuda-hearts"
+keywords = ["game", "visual-novel", "bevy", "parody"]
+categories = ["games"]
+exclude = ["/target", "/saves"]
+
+[features]
+# bevy presentation layer; the pure vn logic (parser, state machine, saves)
+# builds and tests without it so CI needs no graphics system libraries.
+gui = ["dep:bevy"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Feature set = bevy's 2D+UI stack minus audio/3d/gamepad: those pull
+# alsa/udev system libraries and break headless `--all-features` CI.
+bevy = { version = "0.20", optional = true, default-features = false, features = [
+  "default_app",
+  "std",
+  "multi_threaded",
+  "bevy_winit",
+  "x11",
+  "wayland",
+  "default_font",
+  "bevy_camera",
+  "bevy_color",
+  "bevy_image",
+  "png",
+  "bevy_text",
+  "bevy_window",
+  "bevy_render",
+  "bevy_core_pipeline",
+  "bevy_sprite",
+  "bevy_sprite_render",
+  "bevy_ui",
+  "bevy_ui_render",
+  "bevy_ui_widgets",
+  "bevy_picking",
+  "ui_picking",
+] }
+
+[[bin]]
+name = "cuda-hearts"
+path = "src/main.rs"
+required-features = ["gui"]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+[package.metadata.layers]
+tier = "L1"

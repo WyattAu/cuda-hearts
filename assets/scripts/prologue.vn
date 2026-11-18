@@ -1,0 +1,63 @@
+# prologue.vn — CUDA HEARTS opening scene
+#
+# Format reference (see README):
+#   ~ scene <id>            background switch
+#   ~ show <cast> [mood]    put a character on stage
+#   ~ hide <cast>           remove from stage
+#   ~ label <name>          branch target
+#   ~ jump <name>           go to label
+#   ~ affinity <+n|-n>      relationship score
+#   ~ flag <name>           story flag
+#   ~ ending <name>         reach an ending
+#   <speaker>: text         dialogue (speaker must be in vn::cast)
+#   * text -> label         choice option (consecutive * lines = one block)
+
+~ scene gtc_backstage
+narrator: GTC. Nine thousand developers, one leather jacket, and you — holding two backstage passes you definitely did not win legally.
+
+~ show jensen neutral
+jensen: The more you buy, the more you save.
+
+narrator: He says it to the espresso machine. It still works on you.
+
+you: That's... not how discounts work.
+
+~ show jensen happy
+jensen: That's not how GPU physics works either, and yet here we are.
+
+narrator: Somewhere behind him, a demo rack spins up on its own, like a jukebox that knows.
+
+* Flirt with silicon metaphors -> flirt
+* Ask about the jacket -> jacket
+* Play it safe -> safe
+
+~ label flirt
+~ affinity +2
+~ flag cuda_rizz
+you: Are you a data center? Because my heart just doubled its throughput.
+~ show jensen happy
+jensen: Careful. The more you love, the more you save.
+~ jump encore
+
+~ label jacket
+~ affinity +1
+~ flag jacket_lore
+you: Is the jacket load-bearing at this point?
+jensen: It has outlasted four CEOs and one cryptocurrency winter.
+narrator: He says this with the gravity of a man reading his own keynote.
+~ jump encore
+
+~ label safe
+you: Mr. Huang, I'm actually here about the conference badge mix-up.
+~ show jensen neutral
+jensen: A shame. The espresso machine was starting to open up.
+~ jump encore
+
+~ label encore
+~ scene rooftop
+~ show jensen neutral
+~ hide crowd
+narrator: He hands you half of a warm taiyaki. The city glows green below, like a very serious RGB build.
+jensen: Same time next keynote?
+
+~ ending first_keynote
